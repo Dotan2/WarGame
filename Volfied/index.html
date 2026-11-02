@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Volfied Prototype</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="wrap">
+    <div id="hud">
+      <div class="cell"><span class="lbl">SCORE</span><span id="hScore">0</span></div>
+      <div class="cell"><span class="lbl">HI</span><span id="hHi">0</span></div>
+      <div class="cell"><span class="lbl">ROUND</span><span id="hRound">1</span></div>
+      <div class="cell"><span class="lbl">LIVES</span><span id="hLives">3</span></div>
+      <div class="cell grow">
+        <span class="lbl">SHIELD</span>
+        <div class="bar"><div id="hShield"></div></div>
+        <span id="hShieldNum">99</span>
+      </div>
+      <div class="cell"><span class="lbl">AREA</span><span id="hArea">0.0%</span><span class="dim" id="hTarget">/ 80%</span></div>
+      <div class="cell" id="hPower"></div>
+    </div>
+    <canvas id="game"></canvas>
+    <div id="help">
+      Arrows / WASD move &middot; hold <b>Space</b> to cut (release = ship rewinds) &middot; <b>X</b>/<b>Z</b> fire laser (L power-up) &middot; <b>P</b>/<b>Esc</b> pause &middot; <b>M</b> mute
+    </div>
+  </div>
+  <script src="src/config.js"></script>
+  <script src="src/game.js"></script>
+</body>
+</html>

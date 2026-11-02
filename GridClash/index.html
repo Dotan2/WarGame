@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Grid Clash</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="wrap">
+    <div id="top">
+      <div id="clock"><span id="hTime">3:00</span><span id="hPhase"></span><span id="hLead"></span></div>
+      <div id="board"></div>
+    </div>
+    <div id="stage">
+      <canvas id="game"></canvas>
+      <div id="feed"></div>
+      <div id="hint"></div>
+      <div id="toasts"></div>
+      <div id="menu" class="ov"></div>
+      <div id="settings" class="ov"></div>
+      <div id="collection" class="ov"></div>
+      <div id="results" class="ov"></div>
+    </div>
+    <div id="bottom">
+      <span class="lbl">ENERGY</span>
+      <div class="bar"><div id="hEnergy"></div></div>
+      <div id="abilities"></div>
+    </div>
+    <div id="howto">
+      <div class="inner">
+        <div class="head"><h2>How to play</h2><span>H / Esc to close</span></div>
+        <div class="rules">
+          <div><h4>Goal</h4>First to <b id="ruleWin">50%</b> of the arena wins instantly. If nobody gets there, the biggest land at <b>3:00</b> wins. In the last 30 seconds (<b>sudden death</b>) there are no respawns, and the last one standing wins.</div>
+          <div><h4>Safe and exposed</h4>On your own land you are safe. Outside it, your line is exposed until you get back. You can't cross your own line. Release <b>Space</b> mid-line and your ship rewinds back home.</div>
+          <div><h4>Energy and abilities</h4>Energy comes from <b>claiming land</b> (and +30 per knockout). Abilities are <b>not pickups</b>, so there's nothing to collect. Press <b>Z</b> Dash, <b>X</b> Shield or <b>C</b> Freeze. A tag over a ship (DASH, SHIELD, FROZEN) shows that an ability is active.</div>
+          <div><h4>Bonuses</h4><b>Energy cells</b> appear on free land: draw over or enclose them for energy. The leader wears the <b>CROWN</b>: taking them down pays a bounty. Chain knockouts for a <b>DOUBLE KO</b>, and knock out whoever got you for <b>REVENGE</b>. Bonuses give energy, never land.</div>
+          <div><h4>The zone</h4>From 0:50 the arena burns inward, one ring at a time. A <b>blinking red edge</b> is about to burn: a ship or a line there gets knocked out. Knocked out? You're back in 3s with a small base, 30 energy and a short shield.</div>
+        </div>
+        <div id="howtoDemos"></div>
+      </div>
+    </div>
+    <div id="help">Arrows / WASD move &middot; hold <b>Space</b> to leave your land and draw (release = rewind) &middot; <b>Z</b> Dash &middot; <b>X</b> Shield &middot; <b>C</b> Freeze &middot; <b>P</b> pause &middot; <b>H</b> how to play &middot; <b>M</b> mute &middot; the striped ghost shows what you'd claim</div>
+  </div>
+  <script src="src/config.js"></script>
+  <script src="src/input.js"></script>
+  <script src="src/sim.js"></script>
+  <script src="src/bots.js"></script>
+  <script src="src/render.js"></script>
+  <script src="src/howto.js"></script>
+  <script src="src/audio.js"></script>
+  <script src="src/profile.js"></script>
+  <script src="src/ui.js"></script>
+  <script src="src/main.js"></script>
+</body>
+</html>
