@@ -60,21 +60,21 @@
     p.trailCells = []; p.drawing = false;
   }
 
-  // A cut line or a burned line knocks the player out. A killer takes the share of their land
-  // nearest to the kill (cfg.killTransfer); the rest becomes free land.
+  // A cut line or a burned line knocks the player out. They lose the share of their land nearest
+  // to the kill (cfg.koLoss) to the killer, or to free land if nobody did it, and keep the rest.
+  // In sudden death they are out for good, so the rest becomes free land.
   function eliminate(m, q, killer, cause, extraLost = 0) {
     if (!q.alive) return;
     const trail = q.trailCells.slice(0, 400);
     clearTrail(m, q);
     const cells = [];
     for (let i = 0; i < m.N; i++) if (m.owner[i] === q.id) cells.push(i);
-    let taken = 0;
-    if (killer) {
-      const kx = killer.x, ky = killer.y, W = m.W;
-      cells.sort((a, b) => (Math.abs(a % W - kx) + Math.abs(((a / W) | 0) - ky)) - (Math.abs(b % W - kx) + Math.abs(((b / W) | 0) - ky)));
-      taken = Math.round(cells.length * m.cfg.killTransfer);
-    }
-    cells.forEach((c, k) => { m.owner[c] = k < taken ? killer.id : -1; });
+    const kx = killer ? killer.x : q.x, ky = killer ? killer.y : q.y, W = m.W;
+    cells.sort((a, b) => (Math.abs(a % W - kx) + Math.abs(((a / W) | 0) - ky)) - (Math.abs(b % W - kx) + Math.abs(((b / W) | 0) - ky)));
+    const lose = Math.round(cells.length * m.cfg.koLoss), taken = killer ? lose : 0;
+    for (let k = 0; k < lose; k++) m.owner[cells[k]] = killer ? killer.id : -1;
+    const kept = m.suddenDeath ? 0 : cells.length - lose;
+    if (m.suddenDeath) for (let k = lose; k < cells.length; k++) m.owner[cells[k]] = -1;
     q.alive = false; q.deaths++; q.respawnT = m.cfg.respawnDelay; q.energy = 0;
     q.dashT = q.shieldT = q.frozenT = q.slowT = 0;
     if (m.suddenDeath) q.out = true;
@@ -91,21 +91,25 @@
       q.nemesis = killer.id;
     }
     m.events.push({
-      type: 'elim', who: q.id, by: killer ? killer.id : -1, cause, taken, lost: cells.length + extraLost, trail,
+      type: 'elim', who: q.id, by: killer ? killer.id : -1, cause, taken, lost: cells.length - kept + extraLost, kept, trail,
       x: q.x, y: q.y, kx: killer ? killer.x : q.x, ky: killer ? killer.y : q.y, streak, revenge, bounty,
     });
   }
 
+  // Comes back on the land kept after the knockout when there is any, otherwise on a new small base.
   function respawn(m, p) {
     const cfg = m.cfg, h = cfg.respawnSize >> 1, lo = m.inset + h + 2;
     const spanX = Math.max(1, m.W - 2 * lo), spanY = Math.max(1, m.H - 2 * lo);
+    const own = [];
+    for (let i = 0; i < m.N; i++) if (m.owner[i] === p.id) own.push(i);
     let best = null, bestScore = -Infinity;
     for (let k = 0; k < 40; k++) {
-      const cx = lo + Math.floor(m.rnd() * spanX), cy = lo + Math.floor(m.rnd() * spanY);
+      let cx = lo + Math.floor(m.rnd() * spanX), cy = lo + Math.floor(m.rnd() * spanY);
+      if (own.length) { const c = own[Math.floor(m.rnd() * own.length)]; cx = c % m.W; cy = (c / m.W) | 0; }
       let free = 0;
       for (let dy = -h; dy <= h; dy++) for (let dx = -h; dx <= h; dx++) {
         const i = (cy + dy) * m.W + cx + dx;
-        if (m.owner[i] === -1) free++;
+        if (m.owner[i] === -1 || m.owner[i] === p.id) free++;
         if (m.trail[i] >= 0) free -= 5;
       }
       let dmin = 60;

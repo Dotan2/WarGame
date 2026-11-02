@@ -60,7 +60,7 @@
     { text: 'Nice! Claim 2 more times. Long lines grab more, but rivals can cut them', done: t => t.claims >= 3 },
     { text: 'Grab the glowing <b>energy cell</b>: draw over it or enclose it', done: t => t.orbs >= 1, skipAfter: 30 },
     { text: 'Energy buys abilities: <b>Z</b> Dash, <b>X</b> Shield, <b>C</b> Freeze. Try one', done: t => t.abilities >= 1, skipAfter: 25 },
-    { text: 'A rival line is their weak spot. <b>Cross it</b> to knock them out and take half their land', done: t => t.kills >= 1, skipAfter: 40 },
+    { text: `A rival line is their weak spot. <b>Cross it</b> to knock them out and take ${cfg.koLoss * 100}% of their land`, done: t => t.kills >= 1, skipAfter: 40 },
     { text: `You've got it. First to <b>${cfg.winPercent}%</b> wins!`, done: t => t.stepT > 6 },
   ];
   function stepTutorial(dt) {
@@ -100,7 +100,11 @@
           else feed(`${tag(who)} ${how} in the zone <span class="down">-${pct(e.lost)}%</span>`);
           if (e.by >= 0 && e.streak >= 2) feed(`${tag(P[e.by])} <b style="color:#ffd24f">${e.streak >= 4 ? 'RAMPAGE' : e.streak === 3 ? 'TRIPLE KO' : 'DOUBLE KO'}</b>`);
           if (e.revenge) feed(`${tag(P[e.by])} got <b style="color:#ff4fa3">REVENGE</b> on ${tag(who)}`);
-          if (mine) { snd('koYou', at); st.deaths++; S.hitstop = 0.09; }
+          if (mine) {
+            snd('koYou', at); st.deaths++; S.hitstop = 0.09;
+            S.koWhy = (e.by < 0 ? 'Burned by the zone' : e.cause === 'enclosed' ? `${P[e.by].name} closed a loop around your line` : `${P[e.by].name} cut your line`)
+              + (e.kept ? ` - you keep ${pct(e.kept)}% of your land` : '');
+          }
           else if (e.by === HUMAN) {
             snd(e.streak >= 2 ? 'streak' : e.revenge ? 'revenge' : 'ko', at);
             st.kills++; st.streak = Math.max(st.streak, e.streak); tu.kills++;
@@ -300,12 +304,14 @@
     if (S.mode === 'paused') R.banner('PAUSED', 'P / Esc continue  -  H how to play  -  Q quit to menu');
     if (S.mode === 'play' && !you.alive) {
       R.banner(you.out ? 'ELIMINATED' : `RESPAWN IN ${Math.ceil(you.respawnT)}`,
-        you.out ? 'Sudden death - spectating' : `You come back with ${cfg.respawnEnergy} energy and a short shield`);
+        you.out ? `${S.koWhy} - sudden death, spectating` : S.koWhy, you.out ? [] : [{ text: `You come back on your land with ${cfg.respawnEnergy} energy and a short shield`, color: '#9fd8ff' }]);
     }
   }
 
   // ---------- HUD (persistent elements so numbers can tween and rows can slide) ----------
-  let rows = [], abilChips = {}, lastLead = -1, lastEnergy = 0, lastSec = -1, prevFrame = performance.now();
+  const AB_KEY = { dash: 'Z', shield: 'X', freeze: 'C' }, AB_COLOR = { dash: '#ffd24f', shield: '#4fd1ff', freeze: '#bfe9ff' };
+  const powerEl = $('power'), marksEl = $('emarks'), eNumEl = $('eNum');
+  let rows = [], abilChips = {}, abilMarks = {}, lastLead = -1, lastEnergy = 0, lastSec = -1, prevFrame = performance.now();
   function buildHud(m) {
     boardEl.innerHTML = '';
     rows = m.players.map(p => {
@@ -315,14 +321,19 @@
       boardEl.appendChild(el);
       return { el, pctEl: el.querySelector('.pct'), koEl: el.querySelector('em'), crEl: el.querySelector('.cr'), bar: el.querySelector('.prog > div'), shown: p.pct, cells: p.cells, kills: 0, rank: -1, alive: true, pend: 0, pendT: 0, crown: false };
     });
-    abilEl.innerHTML = '';
-    abilChips = {};
+    abilEl.innerHTML = ''; marksEl.innerHTML = '';
+    abilChips = {}; abilMarks = {};
     for (const [k, a] of Object.entries(cfg.abilities)) {
-      const el = document.createElement('span');
-      el.className = 'ab'; el.innerHTML = `${{ dash: 'Z', shield: 'X', freeze: 'C' }[k]} ${k.toUpperCase()} ${a.cost}`;
+      const el = document.createElement('div');
+      el.className = 'ab'; el.style.setProperty('--c', AB_COLOR[k]);
+      el.innerHTML = `<kbd>${AB_KEY[k]}</kbd><b>${k.toUpperCase()}</b><span>${a.cost}</span><div class="tr"><div></div></div>`;
       el.dataset.ready = '0';
       abilEl.appendChild(el); abilChips[k] = el;
+      const mk = document.createElement('i');
+      mk.style.left = `calc(${a.cost / cfg.energyMax * 100}% - 1px)`; mk.style.setProperty('--c', AB_COLOR[k]);
+      marksEl.appendChild(mk); abilMarks[k] = mk;
     }
+    powerEl.classList.remove('isfull', 'fullnow');
     lastLead = -1; lastEnergy = 0; lastSec = -1;
   }
 
@@ -369,13 +380,37 @@
 
     const you = m.players[HUMAN];
     energyEl.style.width = `${you.energy / cfg.energyMax * 100}%`;
+    eNumEl.textContent = Math.floor(you.energy);
     const gain = you.energy - lastEnergy;
     if (gain >= 1) { floatChip(energyWrap, `+${Math.round(gain)}`, 'up'); anim(energyWrap, 'charge'); }
     lastEnergy = you.energy;
+    // an ability that just became affordable flashes here and over your ship
+    const live = S.mode === 'play' && you.alive, at = R.shipPos(you);
+    let readied = 0;
     for (const [k, a] of Object.entries(cfg.abilities)) {
       const el = abilChips[k], ready = you.energy >= a.cost;
-      if (ready !== (el.dataset.ready === '1')) { el.dataset.ready = ready ? '1' : '0'; el.classList.toggle('ready', ready); if (ready) anim(el, 'pop'); }
+      el.querySelector('.tr > div').style.width = Math.min(100, you.energy / a.cost * 100) + '%';
+      abilMarks[k].classList.toggle('on', ready);
+      if (ready !== (el.dataset.ready === '1')) {
+        el.dataset.ready = ready ? '1' : '0'; el.classList.toggle('ready', ready);
+        if (ready && live) {
+          anim(el, 'readyNow');
+          R.popup(`${AB_KEY[k]} ${k.toUpperCase()} READY`, at.x, at.y - 34 - readied * 15, AB_COLOR[k], 12, { delay: readied * 0.15, rise: 20, life: 1.3 });
+          snd('ready', { k: readied });
+          readied++;
+        }
+      }
       el.classList.toggle('active', (k === 'dash' && you.dashT > 0) || (k === 'shield' && you.shieldT > 0));
+    }
+    const full = you.energy >= cfg.energyMax;
+    if (full !== powerEl.classList.contains('isfull')) {
+      powerEl.classList.toggle('isfull', full);
+      if (full && live) {
+        anim(powerEl, 'fullnow');
+        R.popup('ENERGY FULL', at.x, at.y + 30, '#ffd24f', 14, { rise: -16, life: 1.4 });
+        R.ring(at.x, at.y, 6, 46, '#ffd24f', 0.6, 3);
+        snd('full');
+      }
     }
   }
 

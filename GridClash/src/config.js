@@ -6,7 +6,7 @@ window.GC_CONFIG = {
 
   matchSeconds: 180,
   winPercent: 50, // first to hold this share of the (shrinking) arena wins instantly
-  killTransfer: 0.5, // share of a knocked-out rival's land the killer takes; the rest becomes free
+  koLoss: 0.3, // share of their land a knocked-out player loses (to the killer, or free if none); they keep the rest
   suddenDeath: 30, // last N seconds: no respawns, last one standing wins
 
   speed: 30,

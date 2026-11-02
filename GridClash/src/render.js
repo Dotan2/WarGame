@@ -132,7 +132,7 @@
                 const title = streakName ? streakName + '!' : e.revenge ? 'REVENGE!' : 'KO!';
                 const bonus = [e.revenge && streakName && 'REVENGE', e.bounty && 'CROWN BOUNTY'].filter(Boolean).join(' + ');
                 announce(title, `+${fmt(pct(e.taken))}% from ${who.name}${bonus ? '  -  ' + bonus : ''}`, streakName ? '#ffb347' : e.revenge ? '#ff4fa3' : '#ffd24f', 1.5, 2);
-              } else if (e.who === hid) announce('KNOCKED OUT', e.by >= 0 ? `by ${P[e.by].name} - get REVENGE for bonus energy` : 'burned by the zone', '#ff6b6b', 1.5, 2);
+              } // the human's own knockout is explained by the respawn banner
             }
             break;
           }
@@ -318,9 +318,24 @@
 
     function drawPlayer(p, m, hid) {
       const { x, y, s } = headPos(p);
-      if (p.id === hid) { // keep track of yourself
-        ctx.strokeStyle = rgb(p.color, 0.35 + 0.15 * Math.sin(T * 6)); ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.arc(x, y, 13 + Math.sin(T * 6) * 2, 0, Math.PI * 2); ctx.stroke();
+      if (p.id === hid) { // your energy as a ring around your ship, with a notch per ability cost
+        const R0 = 14, top = -Math.PI / 2, u = p.energy / cfg.energyMax, full = u >= 1;
+        ctx.lineWidth = 6; ctx.strokeStyle = 'rgba(4,5,11,0.85)'; // dark backing so the ring reads on your own land
+        ctx.beginPath(); ctx.arc(x, y, R0, 0, Math.PI * 2); ctx.stroke();
+        ctx.lineWidth = 3;
+        if (u > 0) {
+          ctx.save();
+          if (full) { ctx.shadowColor = '#ffd24f'; ctx.shadowBlur = 8 + 5 * Math.sin(T * 8); }
+          ctx.strokeStyle = full ? '#ffd24f' : '#d9b8ff';
+          ctx.beginPath(); ctx.arc(x, y, R0, top, top + u * Math.PI * 2); ctx.stroke();
+          ctx.restore();
+        }
+        ctx.lineWidth = 2;
+        for (const [k, a] of Object.entries(cfg.abilities)) {
+          const ang = top + a.cost / cfg.energyMax * Math.PI * 2, c = Math.cos(ang), s0 = Math.sin(ang);
+          ctx.strokeStyle = p.energy >= a.cost ? { dash: '#ffd24f', shield: '#4fd1ff', freeze: '#bfe9ff' }[k] : 'rgba(110,130,180,0.6)';
+          ctx.beginPath(); ctx.moveTo(x + c * (R0 - 3), y + s0 * (R0 - 3)); ctx.lineTo(x + c * (R0 + 3), y + s0 * (R0 + 3)); ctx.stroke();
+        }
         if (m.time < 3 && PW >= 600) {
           const by = y - 44 + Math.sin(T * 10) * 4;
           ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.moveTo(x, by + 10); ctx.lineTo(x - 7, by); ctx.lineTo(x + 7, by); ctx.closePath(); ctx.fill();
@@ -455,7 +470,7 @@
       ctx.fillStyle = 'rgba(2,4,12,0.75)'; ctx.fillRect(0, PH / 2 - h / 2, PW, h);
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.fillStyle = '#fff'; ctx.font = 'bold 38px Consolas, monospace'; ctx.fillText(title, PW / 2, PH / 2 - h / 2 + 40);
-      ctx.fillStyle = '#9fd8ff'; ctx.font = '17px Consolas, monospace'; ctx.fillText(sub, PW / 2, PH / 2 - h / 2 + 76);
+      ctx.fillStyle = lines.length ? '#ffd24f' : '#9fd8ff'; ctx.font = '17px Consolas, monospace'; ctx.fillText(sub, PW / 2, PH / 2 - h / 2 + 76);
       ctx.font = '15px Consolas, monospace';
       lines.forEach((l, i) => { ctx.fillStyle = l.color || '#ffd24f'; ctx.fillText(l.text || l, PW / 2, PH / 2 - h / 2 + 104 + i * 22); });
       ctx.textBaseline = 'alphabetic';
@@ -486,7 +501,8 @@
     }
 
     return {
-      draw, drawTitle, banner, countdown, fxEvents, announce, burst, popup, update, ctx, PW, PH, CELL,
+      draw, drawTitle, banner, countdown, fxEvents, announce, burst, popup, ring, update, ctx, PW, PH, CELL,
+      shipPos: p => ({ x: cx(p.x), y: cx(p.y) }),
       setPreview(mask, info) { previewMask = info ? mask : null; preview = info; },
       setDanger(v) { danger = v; },
       setOptions(o) { Object.assign(opt, o); },

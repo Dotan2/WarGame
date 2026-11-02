@@ -22,7 +22,7 @@
     },
     {
       title: 'Cut a rival line',
-      text: `While a rival draws, their line is their weak spot. Cross it and they are knocked out. You take <b>${base.killTransfer * 100}%</b> of their land (the part nearest you), and the rest becomes free.`,
+      text: `While a rival draws, their line is their weak spot. Cross it and they are knocked out. You take <b>${base.koLoss * 100}%</b> of their land (the part nearest you), and they keep the rest.`,
       players: [YOU, RIVAL], spots: [[0.25, 0.5], [0.75, 0.5]],
       scripts: [
         [{ wait: 20 }, ['right', 10], ['up', 9], ['left', 10], ['down', 7], { wait: 100 }],

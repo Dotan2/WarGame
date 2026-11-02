@@ -137,6 +137,8 @@
     go: t => tone(sfxBus, t, 880, 0.22, 'square', 0.07),
     win: t => { arp(t, [523, 659, 784, 1047], 0.12, 'triangle', 0.08, { dur: 0.2 }); duck(0.15, 1.2); },
     lose: t => { arp(t, [523, 466, 415, 349], 0.16, 'triangle', 0.07, { dur: 0.25 }); duck(0.15, 1.2); },
+    ready: (t, o) => arp(t, [988, 1319].map(f => f * (1 + (o.k || 0) * 0.12)), 0.06, 'triangle', 0.05, { dur: 0.12 }),
+    full: t => arp(t, [784, 988, 1175, 1568], 0.05, 'triangle', 0.06, { dur: 0.16 }),
     ui: t => tone(sfxBus, t, 660, 0.04, 'sine', 0.05),
     uiOk: t => tone(sfxBus, t, 880, 0.08, 'triangle', 0.07, { slide: 200 }),
     xp: (t, o) => tone(sfxBus, t, 900 + (o.p || 0) * 700, 0.03, 'sine', 0.03),

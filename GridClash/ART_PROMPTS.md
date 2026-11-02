@@ -19,7 +19,7 @@ A browser arcade game (HTML5 Canvas, top-down 2D) that remakes the classic
 Volfied / Paper.io area-capture idea. 4 players (you + 3 bots) fly small ships
 over a grid arena. You leave your own land to draw a line, and when you return,
 the enclosed area becomes yours. Crossing a rival's open line knocks them out
-and steals half their land. The arena edge burns inward over time.
+and takes part of their land. The arena edge burns inward over time.
 First to own 50% of the arena wins. Matches last 3 minutes, and the game
 should feel fast, competitive and "one more match".
 
